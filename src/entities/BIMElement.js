@@ -3,10 +3,7 @@ import * as THREE from 'three';
 let _idCounter = 0;
 
 /**
- * BIMElement v3.0 — Base class for all structural steel elements.
- * - Premium PBR material creation
- * - Improved selection highlight (emissive + edge enhancement)
- * - Bevel-ready geometry support
+ * BIMElement — Base class for all structural steel elements.
  */
 export class BIMElement {
   constructor(type, params = {}) {
@@ -14,48 +11,29 @@ export class BIMElement {
     this.type = type;
     this.params = { ...params };
     this.mesh = null;
-    this.color = '#7a8494';       // default steel grey
+    this.color = '#a0a8b8';
     this.steelGrade = 'S275 JR';
     this.designation = '';
-    this.label = '';              // user-editable label
     this.area = 0;
     this.mass = 0;
     this.tw = 0;
     this.tf = 0;
     this.engineeringData = null;
     this._isSelected = false;
-    this._isHovered = false;
     this._originalMaterials = new Map();
   }
 
-  /**
-   * Create premium PBR steel material.
-   * Supports clay / realistic modes via SceneManager.setVisualMode.
-   */
-  createMaterial(colorHex = '#7a8494') {
+  createMaterial(colorHex) {
     const color = new THREE.Color(colorHex);
     return new THREE.MeshStandardMaterial({
       color,
       roughness: 0.44,
       metalness: 0.76,
-      envMapIntensity: 0.85,
-      // Subtle bump from mesh normals only — no texture needed
+      envMapIntensity: 0.9,
     });
   }
 
-  /**
-   * Create a slightly darker variant (for web, inner surfaces).
-   */
-  createInnerMaterial(colorHex = '#555e6a') {
-    return new THREE.MeshStandardMaterial({
-      color: new THREE.Color(colorHex),
-      roughness: 0.7,
-      metalness: 0.4,
-      side: THREE.BackSide,
-    });
-  }
-
-  buildMesh() { /* Override in subclasses */ }
+  buildMesh() { /* Override */ }
 
   updateMesh() {
     if (!this.mesh) return;
@@ -82,55 +60,43 @@ export class BIMElement {
     this.mesh.traverse(child => {
       if (child.geometry) child.geometry.dispose();
       if (child.material) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m => m.dispose());
+        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+        else child.material.dispose();
       }
     });
-    this.mesh = null;
   }
 
   _applyUserData() {
     if (!this.mesh) return;
-    const data = {
+    this.mesh.userData = {
       bimId: this.id,
       type: this.type,
       designation: this.designation,
       steelGrade: this.steelGrade,
       params: { ...this.params },
     };
-    this.mesh.userData = data;
-    this.mesh.traverse(child => { child.userData = { ...child.userData, bimId: this.id }; });
   }
 
   setSelected(selected) {
     this._isSelected = selected;
     if (!this.mesh) return;
     this.mesh.traverse(child => {
-      if (!child.isMesh || !child.material) return;
+      if (!child.isMesh) return;
       if (selected) {
         if (!this._originalMaterials.has(child.uuid)) {
           this._originalMaterials.set(child.uuid, {
             emissive: child.material.emissive ? child.material.emissive.clone() : new THREE.Color(0),
             emissiveIntensity: child.material.emissiveIntensity || 0,
-            roughness: child.material.roughness,
-            metalness: child.material.metalness,
           });
         }
-        // Premium selection: bright blue-white emissive edge look
-        child.material.emissive = new THREE.Color(0x3366dd);
-        child.material.emissiveIntensity = 0.22;
-        child.material.roughness = 0.35;
-        child.material.needsUpdate = true;
+        child.material.emissive = new THREE.Color(0x4488ff);
+        child.material.emissiveIntensity = 0.25;
       } else {
         const orig = this._originalMaterials.get(child.uuid);
         if (orig) {
           child.material.emissive.copy(orig.emissive);
           child.material.emissiveIntensity = orig.emissiveIntensity;
-          child.material.roughness = orig.roughness;
-          child.material.metalness = orig.metalness;
-          child.material.needsUpdate = true;
         }
-        this._originalMaterials.delete(child.uuid);
       }
     });
   }
@@ -140,14 +106,14 @@ export class BIMElement {
     if (!this.mesh) return;
     const col = new THREE.Color(colorHex);
     this.mesh.traverse(child => {
-      if (child.isMesh && child.material?.color) {
+      if (child.isMesh && child.material && child.material.color) {
         child.material.color.copy(col);
         child.material.needsUpdate = true;
-        // Update originals
-        if (this._originalMaterials.has(child.uuid)) {
-          const orig = this._originalMaterials.get(child.uuid);
-          this._originalMaterials.set(child.uuid, orig);
-        }
+        // Update originals so deselect doesn't revert
+        this._originalMaterials.set(child.uuid, {
+          emissive: child.material.emissive ? child.material.emissive.clone() : new THREE.Color(0),
+          emissiveIntensity: child.material.emissiveIntensity || 0,
+        });
       }
     });
   }
@@ -177,23 +143,5 @@ export class BIMElement {
   getBoundingBox() {
     if (!this.mesh) return null;
     return new THREE.Box3().setFromObject(this.mesh);
-  }
-
-  /**
-   * Get summary data for inspector.
-   */
-  getSummary() {
-    return {
-      id: this.id,
-      label: this.label || this.designation,
-      type: this.type,
-      designation: this.designation,
-      steelGrade: this.steelGrade,
-      color: this.color,
-      area: this.area,
-      mass: this.mass,
-      position: this.getPosition(),
-      engineeringData: this.engineeringData,
-    };
   }
 }

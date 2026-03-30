@@ -25,7 +25,7 @@ export class MeasureTool {
       this._removeTempLine();
       this._removeTempLabel();
     } else {
-      this.snapManager.orthoLock = true;
+      this.snapManager.orthoLock = false;  // mide en cualquier dirección
     }
   }
 

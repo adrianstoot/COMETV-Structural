@@ -31,7 +31,7 @@ export class SceneManager {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.6;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
 
@@ -95,15 +95,15 @@ export class SceneManager {
   // ─── LIGHTS ──────────────────────────────────────────────────
   _setupLights() {
     // Hemisphere — sky/ground
-    this.hemiLight = new THREE.HemisphereLight(0x8899bb, 0x2a2e3a, 0.6);
+    this.hemiLight = new THREE.HemisphereLight(0xb0c4dd, 0x404858, 0.9);
     this.scene.add(this.hemiLight);
 
-    // Ambient — dark fill
-    this.ambientLight = new THREE.AmbientLight(0xaab0c0, 0.4);
+    // Ambient — garantiza que nada quede negro
+    this.ambientLight = new THREE.AmbientLight(0xc0c8d8, 0.7);
     this.scene.add(this.ambientLight);
 
     // Main directional — angled, casts shadows
-    this.dirLight = new THREE.DirectionalLight(0xfff0e0, 1.6);
+    this.dirLight = new THREE.DirectionalLight(0xfff8f0, 2.2);
     this.dirLight.position.set(10, 18, 12);
     this.dirLight.castShadow = true;
     this.dirLight.shadow.mapSize.set(2048, 2048);
@@ -117,13 +117,13 @@ export class SceneManager {
     this.dirLight.shadow.normalBias = 0.02;
     this.scene.add(this.dirLight);
 
-    // Fill light — cool, opposite side, no shadows
-    this.fillLight = new THREE.DirectionalLight(0xc8d8ff, 0.55);
+    // Fill light — cool, opposite side
+    this.fillLight = new THREE.DirectionalLight(0xd0e0ff, 1.0);
     this.fillLight.position.set(-8, 8, -6);
     this.scene.add(this.fillLight);
 
-    // Rim light — separates profile edges from background
-    this.rimLight = new THREE.DirectionalLight(0xfff8f0, 0.3);
+    // Rim light — separa bordes del fondo
+    this.rimLight = new THREE.DirectionalLight(0xffffff, 0.6);
     this.rimLight.position.set(0, -4, 8);
     this.scene.add(this.rimLight);
   }

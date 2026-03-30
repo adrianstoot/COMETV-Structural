@@ -11,7 +11,7 @@ export class BIMElement {
     this.type = type;
     this.params = { ...params };
     this.mesh = null;
-    this.color = '#a0a8b8';
+    this.color = '#9aabb8';
     this.steelGrade = 'S275 JR';
     this.designation = '';
     this.area = 0;

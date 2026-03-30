@@ -1,48 +1,51 @@
 /**
- * Sidebar — Quick-access toolbar (left side).
+ * Sidebar — Left icon strip with tool/view shortcuts.
  */
 export class Sidebar {
-  constructor(sidebarElement) {
-    this.sidebar = sidebarElement;
+  constructor(el) {
+    this.el = el;
     this.callbacks = {};
+    this._activeTool = 'select';
     this._render();
   }
 
-  on(action, callback) {
-    this.callbacks[action] = callback;
+  on(action, cb) { this.callbacks[action] = cb; }
+  _emit(a) { if (this.callbacks[a]) this.callbacks[a](); }
+
+  setActiveTool(tool) {
+    this._activeTool = tool;
+    this.el.querySelectorAll('.sb-tool[data-action]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.action === tool);
+    });
   }
 
   _render() {
-    const buttons = [
-      { icon: 'fa-file',           action: 'new',       title: 'Nuevo Proyecto' },
-      { icon: 'fa-folder-open',    action: 'open',      title: 'Abrir Proyecto' },
-      { icon: 'fa-floppy-disk',    action: 'save',      title: 'Guardar' },
-      { divider: true },
-      { icon: 'fa-arrow-pointer',  action: 'select',    title: 'Seleccionar' },
-      { icon: 'fa-ruler-combined', action: 'measure',   title: 'Medir' },
-      { divider: true },
-      { icon: 'fa-cube',           action: 'view-3d',   title: 'Vista ISO' },
-      { icon: 'fa-border-all',     action: 'view-top',  title: 'Vista Planta' },
-      { divider: true },
-      { icon: 'fa-info-circle',    action: 'info',      title: 'Información' },
-      { icon: 'fa-gear',           action: 'settings',  title: 'Ajustes' },
-    ];
+    this.el.innerHTML = `
+      ${this._tool('select', 'fa-arrow-pointer', 'Seleccionar', 'V')}
+      ${this._tool('move', 'fa-up-down-left-right', 'Mover', 'G')}
+      ${this._tool('rotate', 'fa-rotate', 'Rotar', 'R')}
+      ${this._tool('scale', 'fa-expand', 'Escalar', 'S')}
+      <div class="sb-divider"></div>
+      ${this._tool('measure', 'fa-ruler-combined', 'Medir', 'M')}
+      ${this._tool('weld', 'fa-bolt', 'Soldadura', 'W')}
+      <div class="sb-divider"></div>
+      ${this._tool('view-iso', 'fa-cube', 'Vista ISO', '1')}
+      ${this._tool('view-top', 'fa-border-all', 'Planta', '7')}
+      ${this._tool('view-front', 'fa-square', 'Frontal', '3')}
+    `;
 
-    let html = '';
-    buttons.forEach(b => {
-      if (b.divider) {
-        html += '<div class="sidebar-divider"></div>';
-      } else {
-        html += `<button class="sidebar-btn" data-action="${b.action}" title="${b.title}"><i class="fa-solid ${b.icon}"></i></button>`;
-      }
-    });
-    this.sidebar.innerHTML = html;
-
-    this.sidebar.querySelectorAll('.sidebar-btn').forEach(btn => {
+    this.el.querySelectorAll('.sb-tool[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
-        const action = btn.dataset.action;
-        if (this.callbacks[action]) this.callbacks[action]();
+        const a = btn.dataset.action;
+        this._emit(a);
       });
     });
+  }
+
+  _tool(action, icon, label, key) {
+    return `<button class="sb-tool" data-action="${action}" title="${label}">
+      <i class="fa-solid ${icon}"></i>
+      <span class="sb-tooltip">${label} <span class="shortcut-hint">${key}</span></span>
+    </button>`;
   }
 }

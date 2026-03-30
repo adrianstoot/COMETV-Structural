@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+/**
+ * GridManager v3.0 — Premium dark grid with major/minor lines and axis indicators.
+ */
 export class GridManager {
   constructor(scene, initialSize = 16) {
     this.scene = scene;
@@ -7,60 +10,60 @@ export class GridManager {
     this.gridGroup.name = 'GridSystem';
     this.scene.add(this.gridGroup);
     this.currentSize = initialSize;
+    this.groundPlane = null;
     this.buildGrid(initialSize);
   }
 
   buildGrid(size) {
-    // Remove old
+    // Clear old
     while (this.gridGroup.children.length) {
       const c = this.gridGroup.children[0];
-      c.geometry?.dispose();
-      c.material?.dispose();
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+        else c.material.dispose();
+      }
       this.gridGroup.remove(c);
     }
     this.currentSize = size;
-    const half = size / 2;
 
-    // Main grid
-    const gridHelper = new THREE.GridHelper(size, size, 0x444466, 0x2a2a3e);
-    gridHelper.position.y = 0;
-    this.gridGroup.add(gridHelper);
+    // Minor grid — subtle
+    const minorGrid = new THREE.GridHelper(size, size * 2, 0x1e2230, 0x181b26);
+    minorGrid.position.y = 0;
+    this.gridGroup.add(minorGrid);
 
-    // Ground plane (invisible, for raycasting)
-    const planeGeo = new THREE.PlaneGeometry(size, size);
-    const planeMat = new THREE.MeshBasicMaterial({
-      visible: false,
-      side: THREE.DoubleSide
-    });
+    // Major grid — slightly more visible
+    const majorGrid = new THREE.GridHelper(size, size / 2, 0x2a3050, 0x2a3050);
+    majorGrid.position.y = 0.001;
+    this.gridGroup.add(majorGrid);
+
+    // Ground plane (for raycasting, invisible)
+    const planeGeo = new THREE.PlaneGeometry(size * 3, size * 3);
+    const planeMat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
     this.groundPlane = new THREE.Mesh(planeGeo, planeMat);
     this.groundPlane.rotation.x = -Math.PI / 2;
     this.groundPlane.name = 'GroundPlane';
     this.gridGroup.add(this.groundPlane);
 
-    // Axes
-    const axisLen = half + 1;
-    // X - Red
-    const xGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0.01, 0),
-      new THREE.Vector3(axisLen, 0.01, 0)
-    ]);
-    const xLine = new THREE.Line(xGeo, new THREE.LineBasicMaterial({ color: 0xff4444, linewidth: 2 }));
+    // Origin indicator (small dot)
+    const originGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const originMat = new THREE.MeshBasicMaterial({ color: 0x4a5070, depthTest: false });
+    const origin = new THREE.Mesh(originGeo, originMat);
+    origin.position.y = 0.002;
+    this.gridGroup.add(origin);
 
-    // Z - Blue
-    const zGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0.01, 0),
-      new THREE.Vector3(0, 0.01, axisLen)
-    ]);
-    const zLine = new THREE.Line(zGeo, new THREE.LineBasicMaterial({ color: 0x4444ff, linewidth: 2 }));
+    // Axis lines — thin and tasteful
+    const axisLen = size / 2 + 1;
+    this._addAxis(new THREE.Vector3(axisLen, 0.003, 0), 0x883333, 'X'); // X – red
+    this._addAxis(new THREE.Vector3(0, axisLen, 0), 0x338833, 'Y');      // Y – green
+    this._addAxis(new THREE.Vector3(0, 0.003, axisLen), 0x334488, 'Z');  // Z – blue
+  }
 
-    // Y - Green
-    const yGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, axisLen, 0)
-    ]);
-    const yLine = new THREE.Line(yGeo, new THREE.LineBasicMaterial({ color: 0x44ff44, linewidth: 2 }));
-
-    this.gridGroup.add(xLine, yLine, zLine);
+  _addAxis(end, color, label) {
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.002, 0), end]);
+    const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.5 });
+    const line = new THREE.Line(geo, mat);
+    this.gridGroup.add(line);
   }
 
   setSize(size) {

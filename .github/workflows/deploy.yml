@@ -36,6 +36,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Include Four Kingdoms
+        run: cp -R four-kingdoms dist/four-kingdoms
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
